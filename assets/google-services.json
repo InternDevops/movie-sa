@@ -1,0 +1,29 @@
+{
+    "project_info": {
+      "project_number": "912852941875",
+      "project_id": "movietracker-9de53",
+      "storage_bucket": "movietracker-9de53.firebasestorage.app"
+    },
+    "client": [
+      {
+        "client_info": {
+          "mobilesdk_app_id": "1:912852941875:android:12886ee8b20c355d6bb746",
+          "android_client_info": {
+            "package_name": "com.movieapp.app"
+          }
+        },
+        "oauth_client": [],
+        "api_key": [
+          {
+            "current_key": "AIzaSyBTD2_UNfWSBld5R57tGDncqhuiik5oqJE"
+          }
+        ],
+        "services": {
+          "appinvite_service": {
+            "other_platform_oauth_client": []
+          }
+        }
+      }
+    ],
+    "configuration_version": "1"
+  }
