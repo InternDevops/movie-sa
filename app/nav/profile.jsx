@@ -103,7 +103,7 @@ const Profile = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0d0d2b', padding: 20, alignItems: 'center' },
-  title: { fontSize: 24, fontWeight: 'bold', paddingHorizontal: 119, padding: 10, backgroundColor: '#1a1a2e', color: '#fff', textAlign: 'center', marginBottom: 20, borderRadius: 200 },
+  title: { fontSize: 24, fontWeight: 'bold', paddingHorizontal: 109, padding: 10, backgroundColor: '#1a1a2e', color: '#fff', textAlign: 'center', marginBottom: 20, borderRadius: 200 },
   avatar: { width: 100, height: 100, borderRadius: 50, marginBottom: 10 },
   name: { fontSize: 22, fontWeight: 'bold', color: '#fff', textAlign: 'center', marginBottom: 10 },
   email: { fontSize: 14, color: '#888', marginBottom: 20 },

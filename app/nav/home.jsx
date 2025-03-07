@@ -73,8 +73,10 @@ const HomeScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.greeting}>Hello,</Text>
-        <Text style={styles.username}>User</Text>
+        <Text style={styles.eventName}>
+          <Text style={styles.smallText}></Text> {'\n'}
+          Night <Text style={styles.highlight}>Verse</Text>
+        </Text>
         <TouchableOpacity>
           <MaterialIcons name="notifications" size={28} color="white" />
         </TouchableOpacity>
@@ -121,12 +123,27 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0d0d2b', paddingTop: 10 },
   header: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 10 },
-  greeting: { fontSize: 22, color: 'white' },
-  username: { fontSize: 22, fontWeight: 'bold', color: 'white' },
   sectionTitle: { fontSize: 18, color: 'white', fontWeight: 'bold', paddingHorizontal: 20, marginVertical: 25 },
   movieCard: { marginHorizontal: 10, borderRadius: 10, overflow: 'hidden' },
   movieImage: { width: 140, height: 200, borderRadius: 10 },
   loader: { alignSelf: 'center', width: 200, height: 200 },
+  eventName: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginTop: -30,
+    paddingBottom : 10,
+    color: '#fff',
+    textTransform: 'uppercase',
+  },
+  smallText: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: '#bbb',
+    textTransform: 'uppercase',
+  },
+  highlight: {
+    color: '#8ab4f8',
+  },
 });
 
 export default HomeScreen;

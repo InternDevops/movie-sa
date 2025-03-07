@@ -19,7 +19,7 @@ const FavoritesScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>My Favorites</Text>
+      <Text style={styles.header}>My Watchlist</Text>
 
       {favorites.length > 0 ? (
         <FlatList

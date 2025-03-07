@@ -1,7 +1,20 @@
 import React, { useState } from 'react';
-import { View, TextInput, FlatList, Image, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, FlatList, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
+
+const CATEGORY_DATA = [
+  { id: 28, name: 'Action', color: '#ff4757' },
+  { id: 35, name: 'Comedy', color: '#ffa502' },
+  { id: 18, name: 'Drama', color: '#3742fa' },
+  { id: 27, name: 'Horror', color: '#2f3542' },
+  { id: 878, name: 'Sci-Fi', color: '#1e90ff' },
+  { id: 12, name: 'Adventure', color: '#2ed573' },
+  { id: 10749, name: 'Romance', color: '#ff6b81' },
+  { id: 16, name: 'Animation', color: '#70a1ff' },
+  { id: 99, name: 'Documentary', color: '#ff9f43' },
+  { id: 53, name: 'Thriller', color: '#5352ed' },
+];
 
 const SearchScreen = () => {
   const [query, setQuery] = useState('');
@@ -27,6 +40,8 @@ const SearchScreen = () => {
 
   return (
     <View style={styles.container}>
+      <Text style={styles.title}>Search</Text>
+
       {/* Search Bar */}
       <View style={styles.searchBar}>
         <MaterialIcons name="search" size={30} color="gray" style={styles.searchIcon} />
@@ -38,6 +53,21 @@ const SearchScreen = () => {
           value={query}
         />
       </View>
+
+      {/* Categories Grid (2 per row) */}
+      <FlatList
+        data={CATEGORY_DATA}
+        keyExtractor={(item) => item.id.toString()}
+        numColumns={2} // Display 2 categories per row
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[styles.categoryCard, { backgroundColor: item.color }]}
+            onPress={() => router.push(`/category/${item.id}`)}
+          >
+            <Text style={styles.categoryText}>{item.name}</Text>
+          </TouchableOpacity>
+        )}
+      />
 
       {/* Search Results */}
       <FlatList
@@ -57,6 +87,7 @@ const SearchScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: '#0d0d2b' },
+  title: { fontSize: 24, fontWeight: 'bold',padding : 10,backgroundColor: '#1a1a2e', color: '#fff', textAlign: 'center', marginBottom: 20, borderRadius : 200},
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -69,14 +100,19 @@ const styles = StyleSheet.create({
   searchIcon: { marginRight: 10 },
   searchInput: { flex: 1, color: 'white' },
 
-  movieCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#111',
+  // Category Grid Styles
+  categoryCard: {
+    flex: 1,
+    margin: 8,
     borderRadius: 10,
-    padding: 10,
-    marginBottom: 10,
+    paddingVertical: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  categoryText: { fontSize: 18, fontWeight: 'bold', color: 'white' },
+
+  // Movie List Styles
+  movieCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#111', borderRadius: 10, padding: 15, marginBottom: 10 },
   movieImage: { width: 60, height: 90, borderRadius: 5, marginRight: 15 },
   movieTitle: { fontSize: 16, color: 'white', fontWeight: 'bold' },
 });
