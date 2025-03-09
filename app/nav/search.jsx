@@ -54,20 +54,22 @@ const SearchScreen = () => {
         />
       </View>
 
-      {/* Categories Grid (2 per row) */}
-      <FlatList
-        data={CATEGORY_DATA}
-        keyExtractor={(item) => item.id.toString()}
-        numColumns={2} // Display 2 categories per row
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[styles.categoryCard, { backgroundColor: item.color }]}
-            onPress={() => router.push(`/category/${item.id}`)}
-          >
-            <Text style={styles.categoryText}>{item.name}</Text>
-          </TouchableOpacity>
-        )}
-      />
+      {/* Categories Grid (Hidden when searching) */}
+      {query.length === 0 && (
+        <FlatList
+          data={CATEGORY_DATA}
+          keyExtractor={(item) => item.id.toString()}
+          numColumns={2}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[styles.categoryCard, { backgroundColor: item.color }]}
+              onPress={() => router.push(`/category/${item.id}`)}
+            >
+              <Text style={styles.categoryText}>{item.name}</Text>
+            </TouchableOpacity>
+          )}
+        />
+      )}
 
       {/* Search Results */}
       <FlatList
@@ -87,7 +89,7 @@ const SearchScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: '#0d0d2b' },
-  title: { fontSize: 24, fontWeight: 'bold',padding : 10,backgroundColor: '#1a1a2e', color: '#fff', textAlign: 'center', marginBottom: 20, borderRadius : 200},
+  title: { fontSize: 24, fontWeight: 'bold', padding: 10, backgroundColor: '#1a1a2e', color: '#fff', textAlign: 'center', marginBottom: 20, borderRadius: 200 },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -112,7 +114,7 @@ const styles = StyleSheet.create({
   categoryText: { fontSize: 18, fontWeight: 'bold', color: 'white' },
 
   // Movie List Styles
-  movieCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#111', borderRadius: 10, padding: 15, marginBottom: 10 },
+  movieCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#111', borderRadius: 10, padding: 10, marginBottom: 10 },
   movieImage: { width: 60, height: 90, borderRadius: 5, marginRight: 15 },
   movieTitle: { fontSize: 16, color: 'white', fontWeight: 'bold' },
 });

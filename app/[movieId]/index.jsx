@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useSharedValue, withTiming, useAnimatedStyle } from 'react-native-reanimated';
@@ -9,6 +9,7 @@ const MovieDetails = () => {
   const router = useRouter();
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [inWatchlist, setInWatchlist] = useState(false); // State to manage watchlist status
   const opacity = useSharedValue(0);
 
   useEffect(() => {
@@ -30,37 +31,236 @@ const MovieDetails = () => {
 
   const fadeInStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
+  const formatCurrency = (amount) => {
+    return amount ? `$${amount.toLocaleString()}` : 'N/A';
+  };
+
+  const toggleWatchlist = () => {
+    setInWatchlist((prev) => !prev); // Toggle watchlist status
+  };
+
   return (
-    <Animated.View style={[styles.container, fadeInStyle]}>
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <Ionicons name="arrow-back" size={30} color="white" />
-      </TouchableOpacity>
-    
-      {loading ? (
-        <Text style={styles.loadingText}>Loading...</Text>
-      ) : movie ? (
-        <>
-          <Image source={{ uri: `https://image.tmdb.org/t/p/w500${movie.poster_path}` }} style={styles.poster} />
-          <Text style={styles.title}>{movie.title}</Text>
-          <Text style={styles.rating}>⭐ {movie.vote_average}/10</Text>
-          <Text style={styles.overview}>{movie.overview}</Text>
-        </>
-      ) : (
-        <Text style={styles.errorText}>Movie not found.</Text>
-      )}
-    </Animated.View>
+    <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <Animated.View style={[styles.container, fadeInStyle]}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={30} color="white" />
+        </TouchableOpacity>
+
+        {loading ? (
+          <Text style={styles.loadingText}>Loading...</Text>
+        ) : movie ? (
+          <>
+            <Image source={{ uri: `https://image.tmdb.org/t/p/w500${movie.poster_path}` }} style={styles.poster} />
+            
+            <View style={styles.detailsContainer}>
+              <Text style={styles.title}>{movie.title}</Text>
+              <View style={styles.releaseDateContainer}>
+                <Text style={styles.releaseDate}>📅 {movie.release_date}</Text>
+
+                {/* Watchlist Button */}
+                <TouchableOpacity
+                  style={[styles.watchlistButton, inWatchlist && styles.watchlistButtonActive]}
+                  onPress={toggleWatchlist}
+                >
+                  <Text style={styles.watchlistButtonText}>
+                    {inWatchlist ? 'In Watchlist' : 'Add to Watchlist'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.ratingContainer}>
+                <Text style={styles.ratingText}>
+                  ⭐ {movie.vote_average.toFixed(1)}/10 ({movie.vote_count.toLocaleString()} votes)
+                </Text>
+              </View>
+
+              <Text style={styles.sectionTitle}>Overview</Text>
+              <Text style={styles.overview}>{movie.overview}</Text>
+
+              <Text style={styles.sectionTitle}>Genres</Text>
+              <Text style={styles.genre}>
+                {movie.genres?.map((g) => g.name).join(', ') || 'N/A'}
+              </Text>
+
+              {/* Production Companies Section */}
+              <Text style={styles.sectionTitle}>Production Companies</Text>
+              <View style={styles.productionCompaniesContainer}>
+                {movie.production_companies?.length > 0 ? (
+                  <Text style={styles.productionCompany}>
+                    {movie.production_companies.map((company) => company.name).join(' - ')}
+                  </Text>
+                ) : (
+                  <Text style={styles.productionCompany}>N/A</Text>
+                )}
+              </View>
+
+              {/* Budget and Revenue Section */}
+              <View style={styles.budgetRevenueContainer}>
+                <View style={styles.budgetBox}>
+                  <Text style={styles.budgetTitle}>Budget</Text>
+                  <Text style={styles.budgetText}>{formatCurrency(movie.budget)}</Text>
+                </View>
+                <View style={styles.revenueBox}>
+                  <Text style={styles.revenueTitle}>Revenue</Text>
+                  <Text style={styles.revenueText}>{formatCurrency(movie.revenue)}</Text>
+                </View>
+              </View>
+            </View>
+          </>
+        ) : (
+          <Text style={styles.errorText}>Movie not found.</Text>
+        )}
+      </Animated.View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1a1a2e', padding: 20 },
-  backButton: { position: 'absolute', top: 30, left: 20 },
-  poster: { width: '100%', height: 500, borderRadius: 10, marginTop: 50 },
-  title: { fontSize: 24, fontWeight: 'bold', color: 'white', marginTop: 20 },
-  overview: { fontSize: 16, color: 'white', marginTop: 10 },
-  rating: { fontSize: 18, fontWeight: 'bold', color: '#FFD700', marginTop: 10 },
-  loadingText: { color: 'white', textAlign: 'center', marginTop: 20 },
-  errorText: { color: 'red', textAlign: 'center', marginTop: 20 },
+  scrollContainer: {
+    flexGrow: 1,
+    backgroundColor: '#1a1a2e',
+  },
+  container: {
+    flex: 1,
+    paddingBottom: 20,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 30,
+    left: 20,
+    zIndex: 10,
+  },
+  poster: {
+    width: '100%',
+    height: 500,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  detailsContainer: {
+    padding: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  releaseDateContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 5,
+  },
+  releaseDate: {
+    fontSize: 16,
+    color: '#A8B5DB',
+  },
+  watchlistButton: {
+    backgroundColor: '#FF6347', // Tomato color for the button
+    paddingVertical: 5,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+  },
+  watchlistButtonActive: {
+    backgroundColor: '#4CAF50', // Green color when movie is in the watchlist
+  },
+  watchlistButtonText: {
+    fontSize: 16,
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  ratingContainer: {
+    backgroundColor: '#292D3E', // Dark Blue Background
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 10,
+    alignSelf: 'flex-start', // Only as wide as content
+    marginBottom: 10,
+  },
+  ratingText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF', // Gold color for rating
+  },
+  voteCount: {
+    fontSize: 14,
+    color: 'white',
+    marginLeft: 5,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#4FC3F7',
+    marginTop: 20,
+  },
+  overview: {
+    fontSize: 16,
+    color: 'white',
+    marginTop: 10,
+    lineHeight: 22,
+  },
+  genre: {
+    fontSize: 16,
+    color: '#A8B5DB',
+    marginTop: 5,
+  },
+  /* Production Companies Section */
+  productionCompaniesContainer: {
+    marginTop: 10,
+  },
+  productionCompany: {
+    fontSize: 16,
+    color: 'white',
+    marginTop: 5,
+  },
+  /* Budget & Revenue Section */
+  budgetRevenueContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+    backgroundColor: '#24243e',
+    padding: 15,
+    borderRadius: 10,
+  },
+  budgetBox: {
+    flex: 1,
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  revenueBox: {
+    flex: 1,
+    alignItems: 'center',
+    marginLeft: 10,
+  },
+  budgetTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFB74D', // Orange for budget
+  },
+  revenueTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#66BB6A', // Green for revenue
+  },
+  budgetText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  revenueText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  loadingText: {
+    color: 'white',
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  errorText: {
+    color: 'red',
+    textAlign: 'center',
+    marginTop: 20,
+  },
 });
 
 export default MovieDetails;
