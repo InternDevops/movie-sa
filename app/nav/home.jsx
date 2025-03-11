@@ -23,6 +23,16 @@ const MovieCard = ({ movie, onPress, genresMap, customStyles = {} }) => {
     transform: [{ scale: scale.value }],
   }));
 
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const dateObj = new Date(dateString);
+    const day = String(dateObj.getDate()).padStart(2, '0'); // Ensure two-digit day
+    const month = months[dateObj.getMonth()]; // Get month abbreviation
+    const year = dateObj.getFullYear(); // Get full year
+    return `${day}-${month}-${year}`;
+  };
+
   // Map genre IDs to names
   const movieGenres = movie.genre_ids
     .map((id) => genresMap[id])
@@ -37,7 +47,7 @@ const MovieCard = ({ movie, onPress, genresMap, customStyles = {} }) => {
         <View style={styles.movieInfo}>
           <Text style={styles.movieTitle} numberOfLines={1}>{movie.title}</Text>
           <Text style={styles.movieGenres}>{movieGenres}</Text> 
-          <Text style={styles.movieDetails}>⭐ {movie.vote_average.toFixed(1)}   {movie.release_date}</Text>
+          <Text style={styles.movieDetails}>⭐ {movie.vote_average.toFixed(1)}   {formatDate(movie.release_date)}</Text>
         </View>
       </Animated.View>
     </TouchableOpacity>

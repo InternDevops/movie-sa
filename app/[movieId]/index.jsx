@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'rea
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useSharedValue, withTiming, useAnimatedStyle } from 'react-native-reanimated';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const MovieDetails = () => {
   const { movieId } = useLocalSearchParams();
@@ -18,6 +19,7 @@ const MovieDetails = () => {
         const response = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=aaf96c78ceffb8eb75d10677356165e9&language=en-US`);
         const data = await response.json();
         setMovie(data);
+        checkIfInWatchlist(data.id);
       } catch (error) {
         console.error('Error fetching movie details:', error);
       } finally {
@@ -35,8 +37,46 @@ const MovieDetails = () => {
     return amount ? `$${amount.toLocaleString()}` : 'N/A';
   };
 
-  const toggleWatchlist = () => {
-    setInWatchlist((prev) => !prev); // Toggle watchlist status
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const dateObj = new Date(dateString);
+    const day = String(dateObj.getDate()).padStart(2, '0'); // Ensure two-digit day
+    const month = months[dateObj.getMonth()]; // Get month abbreviation
+    const year = dateObj.getFullYear(); // Get full year
+    return `${day}/${month}/${year}`;
+  };
+
+  const checkIfInWatchlist = async (id) => {
+    try {
+      const storedWatchlist = await AsyncStorage.getItem('watchlist');
+      const watchlist = storedWatchlist ? JSON.parse(storedWatchlist) : [];
+      setInWatchlist(watchlist.some((movie) => movie.id === id));
+    } catch (error) {
+      console.error('Error checking watchlist:', error);
+    }
+  };
+
+  const toggleWatchlist = async () => {
+    try {
+      const storedWatchlist = await AsyncStorage.getItem('watchlist');
+      let watchlist = storedWatchlist ? JSON.parse(storedWatchlist) : [];
+
+      if (inWatchlist) {
+        watchlist = watchlist.filter((item) => item.id !== movie.id);
+      } else {
+        watchlist.push({
+          id: movie.id,
+          title: movie.title,
+          poster_path: movie.poster_path,
+        });
+      }
+
+      await AsyncStorage.setItem('watchlist', JSON.stringify(watchlist));
+      setInWatchlist(!inWatchlist);
+    } catch (error) {
+      console.error('Error updating watchlist:', error);
+    }
   };
 
   return (
@@ -54,8 +94,12 @@ const MovieDetails = () => {
             
             <View style={styles.detailsContainer}>
               <Text style={styles.title}>{movie.title}</Text>
+              
               <View style={styles.releaseDateContainer}>
-                <Text style={styles.releaseDate}>📅 {movie.release_date}</Text>
+                <Text style={styles.movieInfoText}>
+                  {Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m
+                </Text>
+                <Text style={styles.releaseDate}>📅{formatDate(movie.release_date)}</Text>
 
                 {/* Watchlist Button */}
                 <TouchableOpacity
@@ -118,7 +162,7 @@ const MovieDetails = () => {
 const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#0d0d2b',
   },
   container: {
     flex: 1,
@@ -126,9 +170,18 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    top: 30,
-    left: 20,
-    zIndex: 10,
+    backgroundColor: '#0d0d2b', 
+    paddingVertical: 8,  
+    paddingHorizontal: 12, 
+    borderRadius: 8, 
+    top: 30, 
+    left: 20, 
+    zIndex: 10, 
+    elevation: 5, 
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
   },
   poster: {
     width: '100%',
@@ -144,6 +197,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
   },
+  movieInfoText: { color: '#A8B5DB', fontSize: 14,alignItems: 'center', marginRight: 15 },
   releaseDateContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -164,14 +218,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50', // Green color when movie is in the watchlist
   },
   watchlistButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     color: 'white',
     fontWeight: 'bold',
   },
   ratingContainer: {
     backgroundColor: '#292D3E', // Dark Blue Background
     paddingVertical: 8,
-    paddingHorizontal: 15,
+    paddingHorizontal: 12,
     borderRadius: 10,
     alignSelf: 'flex-start', // Only as wide as content
     marginBottom: 10,
@@ -179,7 +233,7 @@ const styles = StyleSheet.create({
   ratingText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#FFFFFF', // Gold color for rating
+    color: '#FFFFFF', 
   },
   voteCount: {
     fontSize: 14,
@@ -200,7 +254,7 @@ const styles = StyleSheet.create({
   },
   genre: {
     fontSize: 16,
-    color: '#A8B5DB',
+    color: 'white',
     marginTop: 5,
   },
   /* Production Companies Section */

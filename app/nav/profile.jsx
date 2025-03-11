@@ -159,7 +159,7 @@ const Profile = () => {
 // Styles
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0d0d2b", padding: 20, alignItems: "center" },
-  title: { fontSize: 24, fontWeight: 'bold', paddingHorizontal: 109, padding: 10, backgroundColor: '#1a1a2e', color: '#fff', textAlign: 'center', marginBottom: 20, borderRadius: 200 },
+  title: { fontSize: 24, fontWeight: 'bold', paddingHorizontal: 109, padding: 10, backgroundColor: '#1a1a2e', color: '#fff', textAlign: 'center', marginBottom: 20, borderRadius: 10 },
   avatar: { width: 100, height: 100, borderRadius: 50, marginBottom: 10 },
   cameraIcon: { position: "absolute", bottom: 0, right: 0, backgroundColor: "rgba(0,0,0,0.5)", padding: 5, borderRadius: 20 },
   name: { fontSize: 22, fontWeight: "bold", color: "#fff", marginBottom: 10 },

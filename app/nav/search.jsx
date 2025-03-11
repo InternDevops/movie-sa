@@ -89,7 +89,7 @@ const SearchScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: '#0d0d2b' },
-  title: { fontSize: 24, fontWeight: 'bold', padding: 10, backgroundColor: '#1a1a2e', color: '#fff', textAlign: 'center', marginBottom: 20, borderRadius: 200 },
+  title: { fontSize: 24, fontWeight: 'bold', padding: 10, backgroundColor: '#1a1a2e', color: '#fff', textAlign: 'center', marginBottom: 20, borderRadius: 10 },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -39,7 +39,7 @@ const CategoryScreen = () => {
     try {
       let allResults = [];
       
-      for (let i = 1; i <= 50; i++) {  // Fetch multiple pages
+      for (let i = 1; i <= 30; i++) {  // Fetch multiple pages
         const url = `https://api.themoviedb.org/3/discover/movie?api_key=aaf96c78ceffb8eb75d10677356165e9&with_genres=${categoryId}&page=${i}`;
         
         const response = await fetch(url);
@@ -125,7 +125,7 @@ const CategoryScreen = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: '#0d0d2b' },
   backButton: { position: 'absolute', top: 30, left: 25, zIndex: 1 },
-  title: { fontSize: 24, fontWeight: 'bold', padding: 10, backgroundColor: '#1a1a2e', color: '#fff', textAlign: 'center', marginBottom: 20, borderRadius: 200 },
+  title: { fontSize: 24, fontWeight: 'bold', padding: 10, backgroundColor: '#1a1a2e', color: '#fff',left: '50%', transform: [{ translateX: -100 }], maxWidth: '60%', textAlign: 'center', marginBottom: 20, borderRadius: 10 },
 
   // Alphabet List Styles
   alphabetWrapper: { height: 50, marginBottom: 15 },
