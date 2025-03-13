@@ -1,6 +1,7 @@
-import { StyleSheet, Text, View, ImageBackground, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, ImageBackground, TouchableOpacity, StatusBar } from 'react-native';
 import React from 'react';
 import { Link } from 'expo-router';
+
 
 const Welcome = () => {
   return (
@@ -8,6 +9,7 @@ const Welcome = () => {
       source={{ uri: 'https://example.com/your-image.jpg' }} // Replace with actual image URL
       style={styles.background}
     >
+      <StatusBar backgroundColor="#0d0d2b" barStyle="light-content" />
       <Text style={styles.title}>Forever Night</Text>
       <Text style={styles.subtitle}>Presents</Text>
       <Text style={styles.eventName}>
@@ -34,7 +36,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
-    backgroundColor: '#1a1a2e', // Fallback background color
+    backgroundColor: '#0d0d2b', // Fallback background color
   },
   title: {
     fontSize: 18,

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Alert, StatusBar } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { signInWithEmailAndPassword } from 'firebase/auth';
@@ -26,6 +26,7 @@ const LoginScreen = () => {
 
   return (
     <View style={styles.container}>
+      <StatusBar backgroundColor="#0d0d2b" barStyle="light-content" />
       <TouchableOpacity style={styles.backButton} onPress={() => router.replace('index/..')}>
         <Ionicons name="arrow-back" size={24} color="white" />
       </TouchableOpacity>
@@ -59,7 +60,7 @@ const LoginScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1a1a2e', padding: 20 },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0d0d2b', padding: 20 },
   backButton: { position: 'absolute', top: 40, left: 20 },
   title: { fontSize: 24, color: 'white', fontWeight: 'bold', marginBottom: 20 },
   input: { width: '100%', color: 'white', padding: 10, marginBottom: 10, borderWidth: 1, borderColor: '#ccc', borderRadius: 5 },

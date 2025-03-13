@@ -1,8 +1,9 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
+import { db, auth } from '../../firebaseConfig'; // Ensure firebaseConfig is set up correctly
+import { doc, onSnapshot } from 'firebase/firestore';
 
 const { width } = Dimensions.get('window'); // Get screen width
 
@@ -13,38 +14,49 @@ const WatchlistScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      const fetchWatchlist = async () => {
-        try {
-          const storedWatchlist = await AsyncStorage.getItem('watchlist');
-          let movies = storedWatchlist ? JSON.parse(storedWatchlist) : [];
+      if (!auth.currentUser) return;
 
-          // Fetch movie details from API
+      const userWatchlistRef = doc(db, "watchlists", auth.currentUser.uid);
+
+      const unsubscribe = onSnapshot(userWatchlistRef, async (docSnap) => {
+        if (docSnap.exists()) {
+          let movies = docSnap.data().movies || [];
+
+          // Fetch missing movie details
           const updatedMovies = await Promise.all(
             movies.map(async (movie) => {
-              if (!movie.genre || !movie.rating || !movie.release_date) {
-                const response = await fetch(`https://api.themoviedb.org/3/movie/${movie.id}?api_key=${TMDB_API_KEY}&language=en-US`);
-                const data = await response.json();
-                return {
-                  ...movie,
-                  genre: data.genres?.map(g => g.name).join(', ') || 'Unknown Genre',
-                  rating: data.vote_average ? data.vote_average.toFixed(1) : 'N/A', // Rounded to 1 decimal
-                  release_date: data.release_date || 'N/A',
-                };
+              if (!movie.title || !movie.genre || !movie.release_date) {
+                try {
+                  const response = await fetch(
+                    `https://api.themoviedb.org/3/movie/${movie.id}?api_key=${TMDB_API_KEY}&language=en-US`
+                  );
+                  const data = await response.json();
+                  return {
+                    ...movie,
+                    title: data.title || "Unknown Title",
+                    genre: data.genres?.map(g => g.name).join(', ') || "Unknown Genre",
+                    rating: data.vote_average ? data.vote_average.toFixed(1) : "N/A",
+                    release_date: data.release_date || "N/A",
+                  };
+                } catch (error) {
+                  console.error("Error fetching movie details:", error);
+                  return movie; // Return original if fetch fails
+                }
               }
               return movie;
             })
           );
 
           setWatchlist(updatedMovies);
-          await AsyncStorage.setItem('watchlist', JSON.stringify(updatedMovies)); // Store updated data
-        } catch (error) {
-          console.error('Error fetching watchlist:', error);
+        } else {
+          setWatchlist([]);
         }
-      };
-      fetchWatchlist();
+      });
+
+      return () => unsubscribe();
     }, [])
   );
-
+  
   // Function to format movies in rows of 2
   const formatMovies = (data) => {
     const formatted = [];
@@ -58,49 +70,53 @@ const WatchlistScreen = () => {
     if (!dateString) return 'N/A';
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const dateObj = new Date(dateString);
-    const day = String(dateObj.getDate()).padStart(2, '0'); // Ensure two-digit day
-    const month = months[dateObj.getMonth()]; // Get month abbreviation
-    const year = dateObj.getFullYear(); // Get full year
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const month = months[dateObj.getMonth()];
+    const year = dateObj.getFullYear();
     return `${day}-${month}-${year}`;
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.header}>My Watchlist</Text>
-      <FlatList
-        data={formatMovies(watchlist)}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.row}>
-            {item.map((movie, idx) => (
-              movie ? (
-                <TouchableOpacity 
-                  key={movie.id} 
-                  onPress={() => router.push(`/${movie.id}`)} 
-                  style={styles.card}
-                >
-                  <Image 
-                    source={{ uri: `https://image.tmdb.org/t/p/w200${movie.poster_path}` }} 
-                    style={styles.poster} 
-                  />
-                  <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
-                    {movie.title}
-                  </Text>
-                  <Text style={styles.genre} numberOfLines={1} ellipsizeMode="tail">
-                    {movie.genre}
-                  </Text>
-                  <View style={styles.infoRow}>
-                    <Text style={styles.rating}>⭐ {movie.rating}</Text>
-                    <Text style={styles.date}>{formatDate(movie.release_date)}</Text>
-                  </View>
-                </TouchableOpacity>
-              ) : (
-                <View key={idx} style={styles.emptyCard} /> // Empty space if odd number
-              )
-            ))}
-          </View>
-        )}
-      />
+      {watchlist.length === 0 ? (
+        <Text style={styles.emptyText}>Your watchlist is empty.</Text>
+      ) : (
+        <FlatList
+          data={formatMovies(watchlist)}
+          keyExtractor={(item, index) => index.toString()}
+          renderItem={({ item }) => (
+            <View style={styles.row}>
+              {item.map((movie, idx) =>
+                movie ? (
+                  <TouchableOpacity 
+                    key={movie.id} 
+                    onPress={() => router.push(`/${movie.id}`)} 
+                    style={styles.card}
+                  >
+                    <Image 
+                      source={{ uri: `https://image.tmdb.org/t/p/w200${movie.poster_path}` }} 
+                      style={styles.poster} 
+                    />
+                    <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
+                      {movie.title}
+                    </Text>
+                    <Text style={styles.genre} numberOfLines={1} ellipsizeMode="tail">
+                      {movie.genre || 'Unknown Genre'}
+                    </Text>
+                    <View style={styles.infoRow}>
+                      <Text style={styles.rating}>⭐ {movie.rating || 'N/A'}</Text>
+                      <Text style={styles.date}>{formatDate(movie.release_date)}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ) : (
+                  <View key={idx} style={styles.emptyCard} />
+                )
+              )}
+            </View>
+          )}
+        />
+      )}
     </View>
   );
 };
@@ -117,6 +133,12 @@ const styles = StyleSheet.create({
     marginBottom: 20, 
     borderRadius: 10 
   },
+  emptyText: {
+    color: '#A8B5DB',
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 20,
+  },
   row: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
@@ -125,29 +147,29 @@ const styles = StyleSheet.create({
   card: { marginHorizontal: 10, borderRadius: 10, overflow: 'hidden', alignItems: 'center', width: 140 },
   poster: { width: 140, height: 200, borderRadius: 10 },
   title: {
-    fontSize: 14, // Ensure title fits in one line
+    fontSize: 14,
     fontWeight: 'medium',
     color: '#fff',
     marginTop: 5,
     textAlign: 'center',
   },
   genre: {
-    fontSize: 12, // Ensure genre fits in one line
+    fontSize: 12,
     color: '#8ab4f8',
     textAlign: 'center',
     marginTop: 2,
   },
   infoRow: {
-    flexDirection: 'row', // Align items in a row
-    justifyContent: 'center', // Center them
-    alignItems: 'center', // Vertical alignment
-    marginTop: 5, // Space from genre
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 5,
   },
   rating: {
     fontSize: 12,
-    fontWeight: 'light', // Make rating bold
-    color: '#FFFFFF', // Yellow color for rating
-    marginRight: 10, // Space between rating & date
+    fontWeight: 'light',
+    color: '#FFFFFF',
+    marginRight: 10,
   },
   date: {
     fontSize: 12,

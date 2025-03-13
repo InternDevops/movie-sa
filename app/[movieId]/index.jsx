@@ -3,14 +3,15 @@ import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'rea
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useSharedValue, withTiming, useAnimatedStyle } from 'react-native-reanimated';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { db, auth } from '../../firebaseConfig';
+import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 
 const MovieDetails = () => {
   const { movieId } = useLocalSearchParams();
   const router = useRouter();
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [inWatchlist, setInWatchlist] = useState(false); // State to manage watchlist status
+  const [inWatchlist, setInWatchlist] = useState(false);
   const opacity = useSharedValue(0);
 
   useEffect(() => {
@@ -19,7 +20,9 @@ const MovieDetails = () => {
         const response = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=aaf96c78ceffb8eb75d10677356165e9&language=en-US`);
         const data = await response.json();
         setMovie(data);
-        checkIfInWatchlist(data.id);
+        if (auth.currentUser) {
+          checkIfInWatchlist(data.id);
+        }
       } catch (error) {
         console.error('Error fetching movie details:', error);
       } finally {
@@ -33,6 +36,57 @@ const MovieDetails = () => {
 
   const fadeInStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
+  const checkIfInWatchlist = async (id) => {
+    if (!auth.currentUser) return;
+    try {
+      const userWatchlistRef = doc(db, 'watchlists', auth.currentUser.uid);
+      const docSnap = await getDoc(userWatchlistRef);
+      if (docSnap.exists()) {
+        const watchlist = docSnap.data().movies || [];
+        setInWatchlist(watchlist.some((movie) => movie.id === id));
+      }
+    } catch (error) {
+      console.error('Error checking watchlist:', error);
+    }
+  };
+
+  const toggleWatchlist = async () => {
+    if (!auth.currentUser) {
+      console.error("User not logged in");
+      return;
+    }
+  
+    const userWatchlistRef = doc(db, "watchlists", auth.currentUser.uid);
+  
+    try {
+      const docSnap = await getDoc(userWatchlistRef);
+  
+      if (!docSnap.exists()) {
+        await setDoc(userWatchlistRef, { movies: [] }); // Ensure the document exists
+      }
+  
+      const movieData = {
+        id: movie.id,
+        title: movie.title,
+        poster_path: movie.poster_path,
+      };
+  
+      if (inWatchlist) {
+        await updateDoc(userWatchlistRef, {
+          movies: arrayRemove(movieData), // Ensure this format is accepted
+        });
+        setInWatchlist(false);
+      } else {
+        await updateDoc(userWatchlistRef, {
+          movies: arrayUnion(movieData),
+        });
+        setInWatchlist(true);
+      }
+    } catch (error) {
+      console.error("Error updating watchlist:", error);
+    }
+  };
+  
   const formatCurrency = (amount) => {
     return amount ? `$${amount.toLocaleString()}` : 'N/A';
   };
@@ -45,38 +99,6 @@ const MovieDetails = () => {
     const month = months[dateObj.getMonth()]; // Get month abbreviation
     const year = dateObj.getFullYear(); // Get full year
     return `${day}/${month}/${year}`;
-  };
-
-  const checkIfInWatchlist = async (id) => {
-    try {
-      const storedWatchlist = await AsyncStorage.getItem('watchlist');
-      const watchlist = storedWatchlist ? JSON.parse(storedWatchlist) : [];
-      setInWatchlist(watchlist.some((movie) => movie.id === id));
-    } catch (error) {
-      console.error('Error checking watchlist:', error);
-    }
-  };
-
-  const toggleWatchlist = async () => {
-    try {
-      const storedWatchlist = await AsyncStorage.getItem('watchlist');
-      let watchlist = storedWatchlist ? JSON.parse(storedWatchlist) : [];
-
-      if (inWatchlist) {
-        watchlist = watchlist.filter((item) => item.id !== movie.id);
-      } else {
-        watchlist.push({
-          id: movie.id,
-          title: movie.title,
-          poster_path: movie.poster_path,
-        });
-      }
-
-      await AsyncStorage.setItem('watchlist', JSON.stringify(watchlist));
-      setInWatchlist(!inWatchlist);
-    } catch (error) {
-      console.error('Error updating watchlist:', error);
-    }
   };
 
   return (
@@ -178,10 +200,7 @@ const styles = StyleSheet.create({
     left: 20, 
     zIndex: 10, 
     elevation: 5, 
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+    boxShadow: '0px 3px 5px rgba(0, 0, 0, 0.4)',
   },
   poster: {
     width: '100%',

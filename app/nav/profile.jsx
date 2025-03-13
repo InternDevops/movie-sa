@@ -13,43 +13,61 @@ import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { auth, db } from "../../firebaseConfig";
 import { signOut, onAuthStateChanged, updateProfile } from "firebase/auth";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, onSnapshot } from "firebase/firestore";
 
 const Profile = () => {
   const [user, setUser] = useState(null);
   const [name, setName] = useState("");
   const [photoURL, setPhotoURL] = useState("https://via.placeholder.com/100");
+  const [watchlistCount, setWatchlistCount] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const router = useRouter();
 
   // Load user data from Firebase on mount
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUser(user);
         setName(user.displayName || user.email.split("@")[0]);
 
-        // Fetch profile picture from Firestore
+        // Fetch profile picture
         const userRef = doc(db, "users", user.uid);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists()) {
-          const userData = userSnap.data();
-          setPhotoURL(userData.photoURL || "https://via.placeholder.com/100");
-        }
+        const unsubscribeProfile = onSnapshot(userRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const userData = docSnap.data();
+            setPhotoURL(userData.photoURL || "https://via.placeholder.com/100");
+          }
+        });
+
+        // Watchlist count listener (real-time updates)
+        const watchlistRef = doc(db, "watchlists", user.uid);
+        const unsubscribeWatchlist = onSnapshot(watchlistRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const watchlistData = docSnap.data();
+            setWatchlistCount(watchlistData.movies ? watchlistData.movies.length : 0);
+          } else {
+            setWatchlistCount(0);
+          }
+        });
+
+        // Cleanup listeners on unmount
+        return () => {
+          unsubscribeProfile();
+          unsubscribeWatchlist();
+        };
       }
     });
-
-    return unsubscribe;
+    return () => unsubscribeAuth();
   }, []);
 
-  // 🔹 Updated pickImage function (Base64 Upload)
+  // Pick Image from Gallery
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.5, // Compress image
-      base64: true, // Convert to Base64
+      quality: 0.5,
+      base64: true,
     });
 
     if (!result.canceled) {
@@ -61,7 +79,7 @@ const Profile = () => {
     }
   };
 
-  // 🔹 Save Image to Firestore (User Document)
+  // Save Image to Firestore
   const saveImageToFirestore = async (base64String) => {
     try {
       const userRef = doc(db, "users", auth.currentUser.uid);
@@ -136,7 +154,7 @@ const Profile = () => {
           <Text style={styles.email}>{user.email}</Text>
 
           <View style={styles.stats}>
-            <Text style={styles.statsText}>Favorite Movies: 5</Text>
+            <Text style={styles.statsText}>Watchlist Movies: {watchlistCount}</Text>
           </View>
 
           <TouchableOpacity style={styles.button}>
@@ -159,7 +177,7 @@ const Profile = () => {
 // Styles
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0d0d2b", padding: 20, alignItems: "center" },
-  title: { fontSize: 24, fontWeight: 'bold', paddingHorizontal: 109, padding: 10, backgroundColor: '#1a1a2e', color: '#fff', textAlign: 'center', marginBottom: 20, borderRadius: 10 },
+  title: { fontSize: 24, fontWeight: 'bold', paddingHorizontal: 119, padding: 10, backgroundColor: '#1a1a2e', color: '#fff', textAlign: 'center', marginBottom: 20, borderRadius: 10 },
   avatar: { width: 100, height: 100, borderRadius: 50, marginBottom: 10 },
   cameraIcon: { position: "absolute", bottom: 0, right: 0, backgroundColor: "rgba(0,0,0,0.5)", padding: 5, borderRadius: 20 },
   name: { fontSize: 22, fontWeight: "bold", color: "#fff", marginBottom: 10 },

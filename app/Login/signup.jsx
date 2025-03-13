@@ -71,7 +71,7 @@ const SignUpScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1a1a2e', padding: 20 },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0d0d2b', padding: 20 },
   backButton: { position: 'absolute', top: 40, left: 20 },
   title: { fontSize: 24, color: 'white', fontWeight: 'bold', marginBottom: 20 },
   input: { width: '100%', color: 'white', padding: 10, marginBottom: 10, borderWidth: 1, borderColor: '#ccc', borderRadius: 5 },

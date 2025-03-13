@@ -7,7 +7,7 @@ const NavLayout = () => {
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: false, 
-        tabBarStyle: { backgroundColor: '#1a1a2e', borderTopWidth: 0 },
+        tabBarStyle: { backgroundColor: '#1a1a3e', borderTopWidth: 0 },
         tabBarActiveTintColor: '#007BFF',
         tabBarInactiveTintColor: '#8e8e8e',
         tabBarIconStyle: { marginTop: 4 },

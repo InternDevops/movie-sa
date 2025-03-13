@@ -1,16 +1,19 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, Image, FlatList, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, Image, FlatList, TouchableOpacity, ScrollView, RefreshControl, StatusBar, BackHandler } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import Animated, { useSharedValue, withSpring, useAnimatedStyle } from 'react-native-reanimated';
 import LottieView from 'lottie-react-native';
+import { useFocusEffect } from '@react-navigation/native';
 
 const API_KEY = 'aaf96c78ceffb8eb75d10677356165e9';
 const API_URL = `https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}&language=en-US&page=1`;
 const ACTION_API_URL = `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&with_genres=28`;
 const COMEDY_API_URL = `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&with_genres=35`;
+const SCIFI_API_URL = `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&with_genres=878`;
 const LATEST_API_URL = `https://api.themoviedb.org/3/movie/now_playing?api_key=${API_KEY}&language=en-US&page=1`;
 const GENRES_API_URL = `https://api.themoviedb.org/3/genre/movie/list?api_key=${API_KEY}&language=en-US`;
+
 
 const MovieCard = ({ movie, onPress, genresMap, customStyles = {} }) => {
   const scale = useSharedValue(0.8);
@@ -58,6 +61,7 @@ const HomeScreen = () => {
   const [topMovies, setTopMovies] = useState([]);
   const [actionMovies, setActionMovies] = useState([]);
   const [comedyMovies, setComedyMovies] = useState([]);
+  const [sciFiMovies, setSciFiMovies] = useState([]);
   const [latestMovies, setLatestMovies] = useState([]);
   const [genresMap, setGenresMap] = useState({});
   const [loading, setLoading] = useState(true);
@@ -66,10 +70,11 @@ const HomeScreen = () => {
 
   const fetchMovies = async () => {
     try {
-      const [topRes, actionRes, comedyRes, latestRes, genresRes] = await Promise.all([
+      const [topRes, actionRes, comedyRes, sciFiRes, latestRes, genresRes] = await Promise.all([
         fetch(API_URL),
         fetch(ACTION_API_URL),
         fetch(COMEDY_API_URL),
+        fetch(SCIFI_API_URL),
         fetch(LATEST_API_URL),
         fetch(GENRES_API_URL),
       ]);
@@ -77,6 +82,7 @@ const HomeScreen = () => {
       const topData = await topRes.json();
       const actionData = await actionRes.json();
       const comedyData = await comedyRes.json();
+      const sciFiData = await sciFiRes.json();
       const latestData = await latestRes.json();
       const genresData = await genresRes.json();
 
@@ -86,9 +92,14 @@ const HomeScreen = () => {
         genreMap[genre.id] = genre.name;
       });
 
+      const sortedLatestMovies = latestData.results.sort((a, b) => 
+        new Date(b.release_date) - new Date(a.release_date)
+      );
+
       setTopMovies(topData.results.slice(0, 10));
       setActionMovies(actionData.results);
       setComedyMovies(comedyData.results);
+      setSciFiMovies(sciFiData.results);
       setLatestMovies(latestData.results);
       setGenresMap(genreMap);
     } catch (error) {
@@ -99,9 +110,23 @@ const HomeScreen = () => {
     }
   };
 
-  useEffect(() => {
-    fetchMovies();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchMovies(); // Reload movies on focus
+
+      // Handle back button press to reload instead of exiting
+      const onBackPress = () => {
+        fetchMovies(); // Refresh the data
+        return true; // Prevent default back action
+      };
+
+      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    }, [])
+  );
+
+  
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -119,6 +144,7 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
+      <StatusBar backgroundColor="#0d0d2b" barStyle="light-content" />
       <View style={styles.header}>
         <Text style={styles.eventName}>
           <Text style={styles.smallText}></Text> {'\n'}
@@ -193,6 +219,15 @@ const HomeScreen = () => {
           <FlatList
             horizontal
             data={comedyMovies}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => <MovieCard movie={item} genresMap={genresMap} onPress={() => router.push(`/${item.id}`)} />}
+            showsHorizontalScrollIndicator={false}
+          />
+
+          <Text style={styles.sectionTitle}>Sci-Fi Movies</Text>
+          <FlatList
+            horizontal
+            data={sciFiMovies}
             keyExtractor={(item) => item.id.toString()}
             renderItem={({ item }) => <MovieCard movie={item} genresMap={genresMap} onPress={() => router.push(`/${item.id}`)} />}
             showsHorizontalScrollIndicator={false}
