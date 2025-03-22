@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, Dimensions, Animated } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { db, auth } from '../../firebaseConfig'; // Ensure firebaseConfig is set up correctly
@@ -11,6 +11,9 @@ const TMDB_API_KEY = 'aaf96c78ceffb8eb75d10677356165e9'; // Replace with your TM
 
 const WatchlistScreen = () => {
   const [watchlist, setWatchlist] = useState([]);
+  const [totalWatchTime, setTotalWatchTime] = useState(0);
+  const [genreBreakdown, setGenreBreakdown] = useState({});
+  const progressAnimations = {};
 
   useFocusEffect(
     useCallback(() => {
@@ -25,7 +28,7 @@ const WatchlistScreen = () => {
           // Fetch missing movie details
           const updatedMovies = await Promise.all(
             movies.map(async (movie) => {
-              if (!movie.title || !movie.genre || !movie.release_date) {
+              if (!movie.title || !movie.genre || !movie.release_date || !movie.runtime) {
                 try {
                   const response = await fetch(
                     `https://api.themoviedb.org/3/movie/${movie.id}?api_key=${TMDB_API_KEY}&language=en-US`
@@ -37,6 +40,7 @@ const WatchlistScreen = () => {
                     genre: data.genres?.map(g => g.name).join(', ') || "Unknown Genre",
                     rating: data.vote_average ? data.vote_average.toFixed(1) : "N/A",
                     release_date: data.release_date || "N/A",
+                    runtime: data.runtime || 0,
                   };
                 } catch (error) {
                   console.error("Error fetching movie details:", error);
@@ -48,20 +52,35 @@ const WatchlistScreen = () => {
           );
 
           setWatchlist(updatedMovies);
+
+          // Calculate Total Watch Time
+          const totalRuntime = updatedMovies.reduce((sum, movie) => sum + (movie.runtime || 0), 0);
+          setTotalWatchTime(totalRuntime);
+
+          // Calculate Genre Breakdown
+          const genreCounts = {};
+          updatedMovies.forEach(movie => {
+            const genres = movie.genre ? movie.genre.split(', ') : [];
+            genres.forEach(genre => {
+              genreCounts[genre] = (genreCounts[genre] || 0) + 1;
+            });
+          });
+          setGenreBreakdown(genreCounts);
         } else {
           setWatchlist([]);
+          setTotalWatchTime(0);
+          setGenreBreakdown({});
         }
       });
 
       return () => unsubscribe();
     }, [])
   );
-  
-  // Function to format movies in rows of 2
+
   const formatMovies = (data) => {
     const formatted = [];
     for (let i = 0; i < data.length; i += 2) {
-      formatted.push([data[i], data[i + 1] || null]); // Pair movies in twos
+      formatted.push([data[i], data[i + 1] || null]);
     }
     return formatted;
   };
@@ -77,12 +96,57 @@ const WatchlistScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>My Watchlist</Text>
-      {watchlist.length === 0 ? (
-        <Text style={styles.emptyText}>Your watchlist is empty.</Text>
-      ) : (
+      <View style={styles.container}>
+        {/* ✅ Move these inside ListHeaderComponent */}
         <FlatList
+          ListHeaderComponent={ // ✅ Added ListHeaderComponent here
+            <View>
+              <Text style={styles.header}>My Watchlist</Text>
+              <View style={{ alignItems: 'center', marginBottom: 10 }}>
+                <Text style={styles.watchTime}>Total Watch Time:</Text>
+                <Text style={[styles.watchTime, { fontSize: 16, fontWeight: 'bold', marginTop: 4 }]}>
+                  ({Math.floor(totalWatchTime / 60)} hrs {totalWatchTime % 60} mins {Math.floor((totalWatchTime % 1) * 60)} sec)
+                </Text>
+              </View>
+              <View style={styles.genreContainer}>
+                <Text style={styles.genreHeader}>Genre Breakdown:</Text>
+                {Object.entries(genreBreakdown).map(([genre, count]) => {
+                  if (!progressAnimations[genre]) {
+                    progressAnimations[genre] = new Animated.Value(0);
+                  }
+  
+                  // Animate progress bar
+                  Animated.timing(progressAnimations[genre], {
+                    toValue: count,
+                    duration: 800,
+                    useNativeDriver: false,
+                  }).start();
+  
+                  const maxCount = Math.max(...Object.values(genreBreakdown));
+  
+                  return (
+                    <View key={genre} style={styles.genreRow}>
+                      <Text style={styles.genreText}>{genre}:</Text>
+                      <View style={styles.progressBar}>
+                        <Animated.View
+                          style={[
+                            styles.progressFill,
+                            { width: progressAnimations[genre].interpolate({
+                                inputRange: [0, maxCount],
+                                outputRange: ["0%", "100%"],
+                              }),
+                            },
+                          ]}
+                        />
+                      </View>
+                      <Text style={styles.countText}>{count}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          } // ✅ End of ListHeaderComponent
+  
           data={formatMovies(watchlist)}
           keyExtractor={(item, index) => index.toString()}
           renderItem={({ item }) => (
@@ -115,11 +179,12 @@ const WatchlistScreen = () => {
               )}
             </View>
           )}
+          ListEmptyComponent={<Text style={styles.emptyText}>Your watchlist is empty.</Text>} // ✅ Optional: Show this when the list is empty
         />
-      )}
-    </View>
-  );
-};
+      </View>
+    );
+  };
+  
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0d0d2b', padding: 20 },
@@ -133,6 +198,14 @@ const styles = StyleSheet.create({
     marginBottom: 20, 
     borderRadius: 10 
   },
+  watchTime: { fontSize: 26, color: 'lightgray', textAlign: 'center', marginBottom: 10 },
+  genreContainer: { marginBottom: 15, paddingHorizontal: 10 },
+  genreHeader: { fontSize: 20, color: 'white', textAlign: 'center', marginBottom: 10 },
+  genreRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  genreText: { fontSize: 14, color: '#A8B5DB', flex: 1 },
+  progressBar: { flex: 3, height: 10, backgroundColor: '#333', borderRadius: 5, overflow: 'hidden' },
+  progressFill: { height: '100%', backgroundColor: '#8ab4f8' },
+  countText: { fontSize: 14, color: '#A8B5DB', marginLeft: 5 },
   emptyText: {
     color: '#A8B5DB',
     fontSize: 16,
@@ -177,7 +250,7 @@ const styles = StyleSheet.create({
   },
   emptyCard: { 
     width: width / 2 - 25, 
-  },
+  },  
 });
 
 export default WatchlistScreen;
