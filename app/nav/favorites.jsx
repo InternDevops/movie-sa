@@ -54,7 +54,7 @@ const WatchlistScreen = () => {
           setWatchlist(updatedMovies);
 
           // Calculate Total Watch Time
-          const totalRuntime = updatedMovies.reduce((sum, movie) => sum + (movie.runtime || 0), 0);
+          const totalRuntime = updatedMovies.reduce((sum, movie) => sum + (Number(movie.runtime) || 0), 0);
           setTotalWatchTime(totalRuntime);
 
           // Calculate Genre Breakdown

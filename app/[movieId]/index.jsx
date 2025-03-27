@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Animated, { useSharedValue, withTiming, useAnimatedStyle } from 'react-native-reanimated';
 import { db, auth } from '../../firebaseConfig';
 import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import * as Notifications from "expo-notifications";
 
 const MovieDetails = () => {
   const { movieId } = useLocalSearchParams();
@@ -34,6 +35,21 @@ const MovieDetails = () => {
     if (movieId) fetchMovieDetails();
   }, [movieId]);
 
+  const sendNotification = async (message) => {
+    try {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Watchlist Update",
+          body: message, 
+        },
+        trigger: null, // Send immediately
+      });
+    } catch (error) {
+      console.error("Error sending notification:", error);
+    }
+  };
+   
+
   const fadeInStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
   const checkIfInWatchlist = async (id) => {
@@ -57,35 +73,36 @@ const MovieDetails = () => {
     }
   
     const userWatchlistRef = doc(db, "watchlists", auth.currentUser.uid);
+    const movieData = {
+      id: movie.id,
+      title: movie.title,
+      poster_path: movie.poster_path,
+    };
+  
+    // Store previous state in case of an error
+    const previousState = inWatchlist;
+    
+    // Optimistically update UI
+    setInWatchlist(!previousState);
   
     try {
-      const docSnap = await getDoc(userWatchlistRef);
+      await updateDoc(userWatchlistRef, {
+        movies: previousState ? arrayRemove(movieData) : arrayUnion(movieData),
+      });
   
-      if (!docSnap.exists()) {
-        await setDoc(userWatchlistRef, { movies: [] }); // Ensure the document exists
-      }
+      // Send notification
+      sendNotification(
+        previousState
+          ? `Removed "${movie.title}" from your watchlist.`
+          : `Added "${movie.title}" to your watchlist.`
+      );
   
-      const movieData = {
-        id: movie.id,
-        title: movie.title,
-        poster_path: movie.poster_path,
-      };
-  
-      if (inWatchlist) {
-        await updateDoc(userWatchlistRef, {
-          movies: arrayRemove(movieData), // Ensure this format is accepted
-        });
-        setInWatchlist(false);
-      } else {
-        await updateDoc(userWatchlistRef, {
-          movies: arrayUnion(movieData),
-        });
-        setInWatchlist(true);
-      }
     } catch (error) {
       console.error("Error updating watchlist:", error);
+      setInWatchlist(previousState); // Revert UI if error occurs
     }
   };
+  
   
   const formatCurrency = (amount) => {
     return amount ? `$${amount.toLocaleString()}` : 'N/A';
